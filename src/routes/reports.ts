@@ -11,7 +11,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/health", requireRole("admin", "director", "manager"), async (req: AuthRequest, res: Response) => {
+router.get("/health", async (req: AuthRequest, res: Response) => {
   try {
     const report = await generateHealthReport();
     res.json({ report });

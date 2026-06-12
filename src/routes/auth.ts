@@ -90,6 +90,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
       return res.status(200).json({
         require2FA: true,
+        userId: user.id,
         message: "检测到异常登录行为，请进行二次认证",
         abnormalType: abnormalResult.abnormalType,
         abnormalReason: abnormalResult.reason,

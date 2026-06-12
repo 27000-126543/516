@@ -24,19 +24,59 @@ export const createApprovalRequest = async (params: {
     throw new Error("申请人不存在");
   }
 
-  const isManager = requester.role === "manager" || requester.role === "director";
-  const totalLevels = isManager ? 2 : 1;
-
+  let totalLevels = 1;
   let currentApproverId: number | undefined;
   let currentApproverName: string | undefined;
 
-  if (requester.supervisorId) {
-    const supervisor = await userRepo.findOne({
-      where: { id: requester.supervisorId },
-    });
-    if (supervisor) {
-      currentApproverId = supervisor.id;
-      currentApproverName = supervisor.realName;
+  if (requester.role === "employee") {
+    totalLevels = 1;
+    if (requester.supervisorId) {
+      const supervisor = await userRepo.findOne({
+        where: { id: requester.supervisorId },
+      });
+      if (supervisor) {
+        currentApproverId = supervisor.id;
+        currentApproverName = supervisor.realName;
+      }
+    }
+  } else {
+    totalLevels = 1;
+    const directors = await userRepo.find({ where: { role: "director" } });
+    let targetApprover: User | undefined;
+
+    if (requester.role === "director") {
+      if (requester.supervisorId) {
+        const supervisor = await userRepo.findOne({
+          where: { id: requester.supervisorId },
+        });
+        if (supervisor && supervisor.role === "director" && supervisor.id !== requester.id) {
+          targetApprover = supervisor;
+        }
+      }
+      if (!targetApprover) {
+        targetApprover = directors.find((d) => d.id !== requester.id) || directors[0];
+      }
+    } else if (requester.role === "manager") {
+      if (requester.supervisorId) {
+        const supervisor = await userRepo.findOne({
+          where: { id: requester.supervisorId },
+        });
+        if (supervisor && supervisor.role === "director") {
+          targetApprover = supervisor;
+        }
+      }
+      if (!targetApprover && directors.length > 0) {
+        targetApprover = directors[0];
+      }
+    } else if (requester.role === "admin") {
+      if (directors.length > 0) {
+        targetApprover = directors[0];
+      }
+    }
+
+    if (targetApprover) {
+      currentApproverId = targetApprover.id;
+      currentApproverName = targetApprover.realName;
     }
   }
 
@@ -105,44 +145,27 @@ export const approveRequest = async (params: {
     approvedAt: new Date().toISOString(),
   });
 
-  if (request.approvalLevel >= request.totalLevels) {
-    request.status = "approved";
-    request.approvedAt = new Date();
-    request.approvalHistory = JSON.stringify(history);
+  request.status = "approved";
+  request.approvedAt = new Date();
+  request.approvalHistory = JSON.stringify(history);
 
-    await requestRepo.save(request);
+  await requestRepo.save(request);
 
-    if (request.requestType === "account_unlock") {
-      await unlockAccount(request.relatedAccountId || request.requesterId);
-    } else if (request.requestType === "permission_restore") {
-      await restorePermissions(request.relatedAccountId || request.requesterId);
-    }
-
-    await createAuditLog({
-      userId: params.approverId,
-      username: approver.username,
-      action: "approval_approve",
-      level: "info",
-      description: `审批通过申请 ID: ${request.id}`,
-    });
-
-    return { success: true, message: "审批通过", request };
-  } else {
-    request.approvalLevel += 1;
-    request.approvalHistory = JSON.stringify(history);
-
-    if (approver.role === "manager") {
-      const directors = await userRepo.find({ where: { role: "director" } });
-      if (directors.length > 0) {
-        request.currentApproverId = directors[0].id;
-        request.currentApproverName = directors[0].realName;
-      }
-    }
-
-    await requestRepo.save(request);
-
-    return { success: true, message: "审批通过，已提交下一级审批", request };
+  if (request.requestType === "account_unlock") {
+    await unlockAccount(request.relatedAccountId || request.requesterId);
+  } else if (request.requestType === "permission_restore") {
+    await restorePermissions(request.relatedAccountId || request.requesterId);
   }
+
+  await createAuditLog({
+    userId: params.approverId,
+    username: approver.username,
+    action: "approval_approve",
+    level: "info",
+    description: `审批通过申请 ID: ${request.id}`,
+  });
+
+  return { success: true, message: "审批通过", request };
 };
 
 export const rejectRequest = async (params: {

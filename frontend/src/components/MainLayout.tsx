@@ -14,7 +14,7 @@ import {
   LogoutOutlined,
   SafetyOutlined,
 } from "@ant-design/icons";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useState, useEffect } from "react";
 import api from "../services/api";
@@ -29,7 +29,7 @@ interface MenuItem {
   roles?: string[];
 }
 
-const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
@@ -148,7 +148,7 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
           </Space>
         </Header>
         <Content className="content-wrapper">
-          {children}
+          <Outlet />
         </Content>
       </Layout>
     </Layout>

@@ -3,12 +3,14 @@ import { Card, Table, Tag, Space, Button, Select, DatePicker, message } from "an
 import { ReloadOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import api from "../services/api";
 import { useAuthStore } from "../store/authStore";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
 const { RangePicker } = DatePicker;
 
 const RotationTasks: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -60,7 +62,7 @@ const RotationTasks: React.FC = () => {
   };
 
   const handleChangePassword = (task: any) => {
-    window.location.href = "/password?taskId=" + task.id;
+    navigate("/password?taskId=" + task.id);
   };
 
   const getStatusTag = (status: string) => {

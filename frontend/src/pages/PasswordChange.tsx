@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, Form, Input, Button, Progress, Tag, message, Space, Alert } from "antd";
+import { Card, Form, Input, Button, Progress, Tag, message, Space, Alert, List } from "antd";
 import { KeyOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import api from "../services/api";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const PasswordChange: React.FC = () => {
   const [form] = Form.useForm();
@@ -11,6 +12,9 @@ const PasswordChange: React.FC = () => {
   const [complexityErrors, setComplexityErrors] = useState<string[]>([]);
   const [policy, setPolicy] = useState<any>(null);
   const [passwordInfo, setPasswordInfo] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const taskId = searchParams.get("taskId");
 
   useEffect(() => {
     fetchData();
@@ -51,17 +55,30 @@ const PasswordChange: React.FC = () => {
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
-      await api.post("/password/change", {
+      const payload: any = {
         oldPassword: values.oldPassword,
         newPassword: values.newPassword,
-      });
+      };
+      if (taskId) {
+        payload.taskId = parseInt(taskId);
+      }
+      await api.post("/password/change", payload);
       message.success("密码修改成功");
       form.resetFields();
       setStrength(null);
       setComplexityErrors([]);
       fetchData();
+      if (taskId) {
+        setTimeout(() => navigate("/rotation"), 1000);
+      }
     } catch (error: any) {
-      message.error(error.response?.data?.message || "修改失败");
+      const msg = error.response?.data?.message || "修改失败";
+      const errors = error.response?.data?.errors;
+      if (errors && errors.length > 0) {
+        message.error(`${msg}: ${errors.join("; ")}`);
+      } else {
+        message.error(msg);
+      }
     } finally {
       setLoading(false);
     }

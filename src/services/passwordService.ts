@@ -36,6 +36,14 @@ export const changePassword = async (
     return { success: false, message: "原密码错误" };
   }
 
+  const isSameAsCurrent = await comparePassword(newPassword, user.passwordHash);
+  if (isSameAsCurrent) {
+    return {
+      success: false,
+      message: "新密码不能与当前正在使用的密码相同",
+    };
+  }
+
   const policy = await getDefaultPolicy();
 
   const complexityResult = validatePasswordComplexity(newPassword, {

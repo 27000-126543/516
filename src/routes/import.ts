@@ -5,38 +5,34 @@ import {
   importPolicyFromCSV,
   importWeakPasswords,
 } from "../services/importService";
-import * as fs from "fs";
-import * as path from "path";
+import multer from "multer";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authMiddleware);
 router.use(requireRole("admin"));
 
-router.post("/users", async (req: AuthRequest, res: Response) => {
+router.post("/users", upload.single("file"), async (req: AuthRequest, res: Response) => {
   try {
-    const { filePath } = req.body;
-
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(400).json({ message: "文件不存在" });
+    if (!req.file) {
+      return res.status(400).json({ message: "请上传CSV文件" });
     }
 
-    const result = await importUsersFromCSV(filePath, req.userId!);
+    const result = await importUsersFromCSV(req.file.buffer, req.userId!);
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: "导入失败", error: (error as Error).message });
   }
 });
 
-router.post("/systems", async (req: AuthRequest, res: Response) => {
+router.post("/systems", upload.single("file"), async (req: AuthRequest, res: Response) => {
   try {
-    const { filePath } = req.body;
-
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(400).json({ message: "文件不存在" });
+    if (!req.file) {
+      return res.status(400).json({ message: "请上传CSV文件" });
     }
 
-    const result = await importPolicyFromCSV(filePath, req.userId!);
+    const result = await importPolicyFromCSV(req.file.buffer, req.userId!);
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: "导入失败", error: (error as Error).message });

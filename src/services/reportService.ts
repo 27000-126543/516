@@ -91,8 +91,11 @@ export const generateHealthReport = async (): Promise<HealthReportData> => {
   const systemBreakdown: HealthReportData["systemBreakdown"] = [];
 
   for (const system of systems) {
-    const systemUsers = users.filter((u) => u.isWeakPassword);
     const systemTasks = await taskRepo.find({ where: { systemId: system.id } });
+    const systemUserIds = Array.from(new Set(systemTasks.map((t) => t.userId)));
+    const systemWeakUsers = users.filter(
+      (u) => systemUserIds.includes(u.id) && u.isWeakPassword
+    );
     const systemCompletedTasks = systemTasks.filter((t) => t.status === "completed");
     const systemAbnormalLogins = await loginLogRepo.count({
       where: { systemId: system.id, isAbnormal: true },
@@ -101,7 +104,7 @@ export const generateHealthReport = async (): Promise<HealthReportData> => {
     systemBreakdown.push({
       systemId: system.id,
       systemName: system.systemName,
-      weakPasswordCount: systemUsers.length,
+      weakPasswordCount: systemWeakUsers.length,
       rotationCompletionRate:
         systemTasks.length > 0
           ? Math.round((systemCompletedTasks.length / systemTasks.length) * 100)

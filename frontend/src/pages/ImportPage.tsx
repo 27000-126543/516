@@ -28,46 +28,39 @@ const ImportPage: React.FC = () => {
   const [weakPasswords, setWeakPasswords] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleUploadUsers: UploadProps["beforeUpload"] = (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        setLoading(true);
-        const response = await api.post("/import/users", {
-          filePath: "/tmp/" + file.name,
-        });
-        setImportResult(response.data);
-        message.success("导入完成");
-      } catch (error: any) {
-        message.error(error.response?.data?.message || "导入失败");
-      } finally {
-        setLoading(false);
-      }
-    };
-    reader.readAsText(file);
+  const handleUploadUsers: UploadProps["beforeUpload"] = async (file) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await api.post("/import/users", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult(response.data);
+      message.success("导入完成");
+    } catch (error: any) {
+      message.error(error.response?.data?.message || "导入失败");
+    } finally {
+      setLoading(false);
+    }
     return false;
   };
 
-  const handleUploadSystems: UploadProps["beforeUpload"] = (file) => {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        setLoading(true);
-        const response = await api.post("/import/systems", {
-          filePath: "/tmp/" + file.name,
-        });
-        setImportResult(response.data);
-        message.success("导入完成");
-      } catch (error: any) {
-        message.error(error.response?.data?.message || "导入失败");
-      } finally {
-        setLoading(false);
-      }
-    };
-    reader.readAsText(file);
+  const handleUploadSystems: UploadProps["beforeUpload"] = async (file) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await api.post("/import/systems", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult(response.data);
+      message.success("导入完成");
+    } catch (error: any) {
+      message.error(error.response?.data?.message || "导入失败");
+    } finally {
+      setLoading(false);
+    }
     return false;
   };
 
